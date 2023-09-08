@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact</title>
+</head>
+<style>
+</style>
+
+<body>
+    <div id="app">
+        <div class="top">
+            <span>任务分配系统——部门管理</span>
+            <a href="http://localhost:8080/ManageSystem/Department/main.html">首页</a>
+            <a href="http://localhost:8080/ManageSystem/Department/center.html">个人中心</a>
+            <img :src="imageUrl" onerror="this.src='../profilephoto/default.jpg'" alt="头像" style="height:30px;width:30px;border-radius: 50%">
+            <span>{{user.name}}</span>
+            <el-button @click="exit">退出登录</el-button>
+        </div>
+        <div class="sidebar">
+            <ul>
+                <li><a href="http://localhost:8080/ManageSystem/Department/main.html">当前任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/taskArchive.html">归档任务</a></li>
+                <li><a href="javascript:;">成员管理</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/assignment.html">任务分配</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/notice.html">公告</a></li>
+            </ul>
+        </div>
+        <div class="contact">
+            <div class="manageCode">
+                <h3>当前准入码：</h3>
+                <p>您的部门：{{department.name}}</p>
+                <p>当前准入码：{{department.manageCode}}</p>
+                <p>剩余使用次数：{{department.time}}</p>
+                <h3>重设准入码：</h3>
+                <span>可用次数</span>
+                <input type="text" placeholder="准入人数" v-model="newDepartment.time">
+                <el-button @click="resetManageCode">更新准入码</el-button>
+            </div>
+            <div class="employee">
+                <h2>下属成员</h2>
+                <el-table
+                        :data="userData"
+                        border
+                        style="width: 100%">
+                    <el-table-column
+                            label="头像"
+                            width="100">
+                        <template slot-scope="scope">
+                            <img :src="scope.row.profilephotoSrc" onerror="this.src='../profilephoto/default.jpg'" alt="头像" style="height:30px;width:30px;border-radius: 50%">
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="name"
+                            label="姓名"
+                            width="180">
+                    </el-table-column>
+                    <el-table-column
+                            prop="email"
+                            label="电子邮箱">
+                    </el-table-column>
+                    <el-table-column
+                            label="操作">
+                        <template slot-scope="scope">
+                            <el-button type="danger" @click="deleteUser(scope.row.userId)">删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+        </div>
+
+
+    </div>
+</body>
+<script src="../js/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<script>
+
+    new Vue({
+        el: "#app",
+        mounted() {
+            this.checkSession();
+        },
+        methods: {
+            checkSession() {
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/checkSession"
+                }).then(resp => {
+                    if (resp.data === null) {
+                        alert("请进行登录再操作")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else if(resp.data.position ==='成员'){
+                        alert("权限不足，请从官方入口尝试再次登入")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else{
+                        this.user = resp.data;
+                        this.imageUrl = "../profilephoto/"+this.user.userId+".jpg";
+                        this.selectUsers();
+                        this.selectDepartment();
+                    }
+                })
+            },
+            selectUsers(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/selectUserByDeparmentId"
+                }).then(resp => {
+                    for(let i = 0;i<resp.data.length;i++){
+                        resp.data[i].profilephotoSrc = "../profilephoto/"+resp.data[i].userId+".jpg";
+                    }
+                    resp.data.shift();
+                    this.userData = resp.data;
+                })
+            },
+            exit(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/delectSession",
+                }).then(resp=>{
+                    this.checkSession()
+                })
+            },
+            selectDepartment(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/department/selectDepartment",
+                }).then(resp=>{
+                    this.department = resp.data;
+                    this.newDepartment = JSON.parse(JSON.stringify(resp.data));//深拷贝
+                })
+            },
+            resetManageCode(){
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/department/resetManageCode",
+                    data:this.newDepartment
+                }).then(resp=>{
+                   this.selectDepartment();
+                })
+            },
+            deleteUser(val) {
+                this.$confirm('此操作将永久删除该成员, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios({
+                        method: "post",
+                        url: "http://localhost:8080/ManageSystem/department/delectUser",
+                        data:val
+                    }).then(resp=>{
+                        this.selectUsers();
+                    })
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功!'
+                    });
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                })
+            },
+        },
+        data() {
+            return{
+                department:{
+                    departmentId:'',
+                    name:'',
+                    principal:'',//负责人
+                    manageCode:'',
+                    time:'',
+                },
+                user:{
+                    userId:'',
+                    departmentId:'',
+                    name:'',
+                    password:'',
+                    position:'',
+                    email:'',
+                },
+                userData:[{
+                    userId:'',
+                    departmentId:'',
+                    name:'',
+                    password:'',
+                    position:'',
+                    email:'',
+                    profilephotoSrc:'',
+                }],
+                imageUrl: '',
+                newDepartment:{
+                    departmentId:'',
+                    name:'',
+                    principal:'',//负责人
+                    manageCode:'',
+                    time:'',
+                },
+            }
+        }
+
+    })
+</script>
+</html>

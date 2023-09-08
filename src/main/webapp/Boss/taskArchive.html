@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TaskArchive</title>
+</head>
+<style>
+    .demo-table-expand {
+        font-size: 0;
+    }
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <div class="top">
+            <span>任务分配系统——归档任务</span>
+            <a href="http://localhost:8080/ManageSystem/Boss/main.html">首页</a>
+            <a href="http://localhost:8080/ManageSystem/Boss/center.html">个人中心</a>
+            <img :src="imageUrl" onerror="this.src='../profilephoto/default.jpg'" alt="头像" style="height:30px;width:30px;border-radius: 50%">
+            <span>{{user.name}}</span>
+            <el-button @click="exit">退出登录</el-button>
+        </div>
+        <div class="sidebar">
+            <ul>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/main.html">当前任务</a></li>
+                <li><a href="javascript:;">归档任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/contact.html">成员管理</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/assignment.html">任务分配</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/issueNotice.html">发布公告</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/notice.html">公告</a></li>
+            </ul>
+        </div>
+        <div>
+<!--            搜索框-->
+            <el-form :inline="true" :model="search" class="demo-form-inline">
+                <el-form-item label="任务名称">
+                    <el-input v-model="search.title" placeholder="任务名称"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-date-picker
+                            v-model="originTime"
+                            type="daterange"
+                            align="right"
+                            unlink-panels
+                            range-separator="至"
+                            start-placeholder="开始日期"
+                            end-placeholder="结束日期"
+                            :picker-options="pickerOptions">
+                    </el-date-picker>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="selectCountByCondition">查询</el-button>
+                </el-form-item>
+            </el-form>
+            <div class="task">
+
+            </div>
+        </div>
+
+        <el-table
+                :data="taskData"
+                style="width: 100%">
+            <el-table-column type="expand">
+                <template slot-scope="props">
+                    <el-form label-position="left" inline class="demo-table-expand">
+                        <el-form-item label="任务名称">
+                            <span>{{ props.row.title }}</span>
+                        </el-form-item>
+                        <el-form-item label="任务摘要">
+                            <span>{{ props.row.briefing }}</span>
+                        </el-form-item>
+                        <el-form-item label="任务详情">
+                            <span>{{ props.row.detail }}</span>
+                        </el-form-item>
+                        <el-form-item label="起始时间">
+                            <span>{{ props.row.startTime}}</span>
+                        </el-form-item>
+                        <el-form-item label="结束时间">
+                            <span>{{ props.row.finishTime }}</span>
+                        </el-form-item>
+                        <el-form-item label="任务状态">
+                            <span>归档中</span>
+                        </el-form-item>
+                        <el-form-item label="归档状态">
+                            <el-button type="info" plain @click="Archive(props.row.taskId)">取消归档</el-button>
+                        </el-form-item>
+                    </el-form>
+                </template>
+            </el-table-column>
+            <el-table-column
+                    label="任务名称"
+                    prop="title">
+            </el-table-column>
+            <el-table-column
+                    label="任务详情"
+                    prop="briefing">
+            </el-table-column>
+            <el-table-column
+                    label="截止时间"
+                    prop="finishTime">
+            </el-table-column>
+            <el-table-column
+                    label="状态"
+                    prop="stateText">
+            </el-table-column>
+        </el-table>
+        <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page="currentPage"
+                :page-sizes="[2, 10, 15, 20]"
+                :page-size="2"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="totalCount">
+        </el-pagination>
+    </div>
+</body>
+<script src="../js/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<script>
+
+    new Vue({
+        el: "#app",
+        mounted() {
+            this.checkSession();
+        },
+        methods: {
+            checkSession() {
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/checkSession"
+                }).then(resp => {
+                    if (resp.data === null) {
+                        alert("请进行登录再操作")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else if(resp.data.position ==='成员'){
+                        alert("权限不足，请从官方入口尝试再次登入")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else{
+                        this.user = resp.data;
+                        this.imageUrl = "../profilephoto/"+this.user.userId+".jpg";
+                        this.selectCountByCondition()
+                    }
+                })
+            },
+            handleSizeChange(val) {
+                // console.log(`每页 ${val} 条`);
+                this.pageSize = val;
+                this.selectByCondition()
+            },
+            handleCurrentChange(val) {
+                // console.log(`当前页: ${val}`);
+                this.currentPage = val;
+                this.selectByCondition()
+            },
+            selectCountByCondition(){
+                if(this.originTime) {
+                    startMonth = this.originTime[0].getMonth()+1
+                    finishMonth = this.originTime[1].getMonth()+1
+                    this.search.startTime = this.originTime[0].getFullYear() + "-" + startMonth + "-" + this.originTime[0].getDate() + " " + this.originTime[0].getHours() + ":" + this.originTime[0].getMinutes() + ":" + this.originTime[0].getSeconds();
+                    this.search.finishTime = this.originTime[1].getFullYear() + "-" + finishMonth + "-" + this.originTime[1].getDate() + " " + this.originTime[1].getHours() + ":" + this.originTime[1].getMinutes() + ":" + this.originTime[1].getSeconds();
+                }
+                else{
+                    this.search.startTime='';
+                    this.search.finishTime=''
+                }
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/department/selectPersonTaskCountByCondition?currentPage="+this.currentPage+"&pageSize="+this.pageSize+"&pageId="+this.pageId,
+                    data: this.search
+                }).then(resp=>{
+                    this.totalCount = resp.data;
+                    this.selectByCondition();
+                })
+            },
+            selectByCondition(){
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/department/selectPersonTaskByCondition?currentPage="+this.currentPage+"&pageSize="+this.pageSize+"&pageId="+this.pageId,
+                    data: this.search
+                }).then(resp=>{
+                    if(resp.data.length===0 && this.currentPage !== 1){
+                        //在当前页无数据的情况下返回上一页
+                        this.currentPage-=1;
+                        this.selectByCondition();
+                        return;
+                    }
+                    for(let i = 0;i< resp.data.length;i++) {
+                        resp.data[i].stateText = resp.data[i].state;
+                        resp.data[i].state = resp.data[i].state === '完成';
+                    }
+                    this.taskData = resp.data;
+                })
+            },
+            Archive(val){
+                console.log(val)
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/department/archiveTask?pageId="+this.pageId,
+                    data:val
+                }).then(resp=>{
+                    this.selectCountByCondition()
+                })
+            },
+            exit(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/delectSession",
+                }).then(resp=>{
+                    this.checkSession()
+                })
+            },
+        },
+        data() {
+            return{
+                taskData: [{
+                    startTime: '',
+                    finishTime: '',
+                    title: '',
+                    briefing: '',
+                    detail: '',
+                    state: '',
+                    stateText:'',
+                    taskId:'',
+                    showId:''
+                }],
+                originTime:'',
+                search: {
+                    title: '',
+                    startTime: '',
+                    finishTime: '',
+                    state: '',
+                },
+                pickerOptions: {
+                    shortcuts: [{
+                        text: '最近一周',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近一个月',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近三个月',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                },
+                value1: '',
+                value2: '',
+                value3: true,
+                totalCount:100,
+                //每页显示条数
+                pageSize:2,
+                currentPage: 1,
+                pageId:2,
+                user:{
+                    userId:'',
+                    departmentId:'',
+                    name:'',
+                    password:'',
+                    position:'',
+                    email:'',
+                },
+                imageUrl: '',
+            }
+        }
+
+    })
+</script>
+</html>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lonelySnow.mapper.UserMapper">
+
+    <resultMap id="userResultMap" type="user">
+        <result property="userId" column="u_id" />
+        <result property="departmentId" column="d_id" />
+    </resultMap>
+
+    <resultMap id="departmentResultMap" type="department">
+        <result property="departmentId" column="d_id" />
+    </resultMap>
+
+    <resultMap id="personTaskResultMap" type="personTask">
+        <result property="startTime" column="start_time" />
+        <result property="finishTime" column="finish_time" />
+        <result property="taskId" column="pt_id" />
+    </resultMap>
+    <update id="archiveTask">
+        UPDATE p_task
+        <if test="pageId == 1">
+            set state = 2
+        </if>
+        <if test="pageId == 2">
+            set state = 1
+        </if>
+        <where>
+                u_id = #{userId} and pt_id = #{taskID}
+        </where>
+    </update>
+
+    <select id="selectPersonTaskByCondition" resultMap="personTaskResultMap">
+        select tp.pt_id,tp.title,tp.briefing,tp.detail,tp.start_time,tp.finish_time,pt.state from p_task pt join total_pt tp on pt.pt_id = tp.pt_id
+        <where>
+            and u_id = #{userId}
+        <if test="pageId == 1">
+            and pt.state != 2
+        </if>
+        <if test="pageId == 2">
+             and pt.state = 2
+        </if>
+        <if test="PT.title != null and PT.title != ''">
+            and title like "%"#{PT.title}"%"
+        </if>
+        <if test="PT.startTime != null and PT.startTime != ''">
+            and start_time &gt;= #{PT.startTime}
+            and finish_time &lt;= #{PT.finishTime}
+        </if>
+        <if test="PT.state != null and PT.state!= ''">
+            and pt.state = #{PT.state}
+        </if>
+            ORDER BY pt.state
+            limit #{begin},#{size}
+        </where>
+    </select>
+
+    <select id="selectPersonTaskCountByCondition" resultType="java.lang.Integer">
+        select count(*) from p_task pt join total_pt tp on pt.pt_id = tp.pt_id
+        <where>
+            and u_id = #{userId}
+            <if test="pageId == 1">
+                and pt.state != 2
+            </if>
+            <if test="pageId == 2">
+                and pt.state = 2
+            </if>
+            <if test="PT.title != null and PT.title != ''">
+                and title like "%"#{PT.title}"%"
+            </if>
+            <if test="PT.startTime != null and PT.startTime != ''">
+                and start_time &gt;= #{PT.startTime}
+                and finish_time &lt;= #{PT.finishTime}
+            </if>
+            <if test="PT.state != null and PT.state!= ''">
+                and pt.state = #{PT.state}
+            </if>
+        </where>
+    </select>
+
+</mapper>
