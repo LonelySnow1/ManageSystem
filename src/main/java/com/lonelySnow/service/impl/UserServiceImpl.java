@@ -79,9 +79,9 @@ public class UserServiceImpl implements UserService {
             send.setCharset("utf-8");// 设置字符集
             System.out.println(email);
             send.addTo(email); // 接收者的Eamil
-            send.setFrom("tapokokokubun@outlook.com", "ManageSystem");// 第一个参数是发送者的Eamil   第二个参数是发送者的昵称
+            send.setFrom("参数是发送者的Eamil", "参数是发送者的昵称");// 第一个参数是发送者的Eamil   第二个参数是发送者的昵称
             // 授权码
-            send.setAuthentication("tapokokokubun@outlook.com", "nbdvwpqgexxtrwms");// 第一个参数是发送者的Eamil   第二个参数是授权码
+            send.setAuthentication("发送者的Eamil", "授权码");// 第一个参数是发送者的Eamil   第二个参数是授权码
             send.setSubject("[用户管理系统] 请通过验证码验证您的邮箱"); // 主题
             send.setMsg("尊敬的用户：\n感谢您使用我们的服务!\n您的验证码如下：\n"+ achieveCode + "\n\t祝您使用愉快!\nLonelySnow[ManageSystem]\n[本邮件为系统自动发送，请勿直接回复]"); // 设置内容
             send.send();// 发送信息

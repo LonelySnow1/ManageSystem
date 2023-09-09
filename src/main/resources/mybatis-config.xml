@@ -14,6 +14,7 @@
             <dataSource type="POOLED">
                 <property name="driver" value="com.mysql.jdbc.Driver"/>
                 <property name="url" value="jdbc:mysql:///ms?useSSL=false"/>
+<!--                下面改成你自己的用户名和密码-->
                 <property name="username" value="root"/>
                 <property name="password" value="123456"/>
             </dataSource>

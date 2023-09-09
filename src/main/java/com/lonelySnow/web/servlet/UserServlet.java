@@ -489,10 +489,11 @@ public class UserServlet extends BaseServlet {
                 //截取路径名
                 String Filename = file.substring(file.indexOf("\\") + 1);
                 //保存在服务端
+                System.out.println(Filename);
                 //创建保存路径
                 String Filename2 = userId+".jpg";
                 //获取真实路径
-                String failPath = "C:\\Users\\H1441400335\\Desktop\\javaweb\\ManageSystem\\src\\main\\webapp\\profilephoto\\"+Filename2;
+                String failPath = "src/main/webapp/profilephoto/"+Filename2;
                 File fileNew = new File(failPath);
                 fileNew.createNewFile();
                 //读取并保存

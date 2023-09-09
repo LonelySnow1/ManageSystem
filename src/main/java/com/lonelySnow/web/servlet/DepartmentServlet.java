@@ -277,7 +277,7 @@ public class DepartmentServlet extends BaseServlet {
 
 
     /**
-     * 获取非法请求详情
+     * 获取非法请求详情，目前没有在网页中使用，可自行使用
      * @throws ServletException
      * @throws IOException
      */
