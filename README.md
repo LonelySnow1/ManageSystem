@@ -52,13 +52,39 @@ The changes need to be made as follows:
 
 1.src/main/resources/mybatis-config.xml ——————数据库链接（Database link）
 
-![](C:\Users\H1441400335\AppData\Roaming\Typora\typora-user-images\image-20230909151457873.png)
-
-
+```xml
+<!--                下面改成你自己的用户名和密码-->
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+```
 
 2.src/main/java/com/lonelySnow/service/impl/UserServiceImpl.java ——————邮箱验证码发送（Send Email）
 
-![image-20230909152130715](C:\Users\H1441400335\AppData\Roaming\Typora\typora-user-images\image-20230909152130715.png)
+```java
+ public String sendEmailCode(String email) {
+        // 创建HtmlEmail对象
+        HtmlEmail send = new HtmlEmail();
+        // 获取验证码
+        String achieveCode = sm.achieveCode();
+        try {
+            send.setHostName("smtp.office365.com");// 服务器名称
+            send.setSmtpPort(587);// 端口号
+            send.setStartTLSEnabled(true);
+            send.setStartTLSRequired(true);// 开启服务
+            send.setCharset("utf-8");// 设置字符集
+            System.out.println(email);
+            send.addTo(email); // 接收者的Eamil
+            send.setFrom("参数是发送者的Eamil", "参数是发送者的昵称");// 第一个参数是发送者的Eamil   第二个参数是发送者的昵称
+            // 授权码
+            send.setAuthentication("发送者的Eamil", "授权码");// 第一个参数是发送者的Eamil   第二个参数是授权码
+            send.setSubject("[用户管理系统] 请通过验证码验证您的邮箱"); // 主题
+            send.setMsg("尊敬的用户：\n感谢您使用我们的服务!\n您的验证码如下：\n"+ achieveCode + "\n\t祝您使用愉快!\nLonelySnow[ManageSystem]\n[本邮件为系统自动发送，请勿直接回复]"); // 设置内容
+            send.send();// 发送信息
+            System.out.println("发送成功");
+        } catch (Exception ignored) {}
+        return achieveCode;
+    }
+```
 
 邮件服务器可以去对应官网查看POP3/SMTP服务相关信息
 
