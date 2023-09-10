@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>login</title>
+</head>
+<body>
+<div id="app">
+    <div class="a">
+        {{Str}}
+    </div>
+</div>
+
+
+<script src="js/vue.js"></script>
+<script src="js/axios-0.18.0.js"></script>
+
+<script>
+    new Vue({
+        el: "#app",
+
+        mounted() {
+            this.HelloWorld();
+        },
+        methods: {
+            HelloWorld() {
+                axios({
+                    method: 'get',
+                    url: 'http://localhost:8080/FirstWork/user/HelloWorld'
+                }).then(resp => {
+                    this.Str = resp.data;
+                })
+            }
+        },
+            data() {
+                return {
+                    Str:'',
+                }
+            }
+
+    })
+
+</script>
+
+</body>
+</html>
