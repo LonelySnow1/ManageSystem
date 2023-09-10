@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notice</title>
+</head>
+<style>
+    .demo-table-expand {
+        font-size: 0;
+    }
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <div class="top">
+            <span>任务分配系统——公告</span>
+            <a href="http://localhost:8080/ManageSystem/Department/main.html">首页</a>
+            <a href="http://localhost:8080/ManageSystem/Department/center.html">个人中心</a>
+            <img :src="imageUrl" onerror="this.src='../profilephoto/default.jpg'" alt="头像" style="height:30px;width:30px;border-radius: 50%">
+            <span>{{user.name}}</span>
+            <el-button @click="exit">退出登录</el-button>
+        </div>
+        <div class="sidebar">
+            <ul>
+                <li><a href="http://localhost:8080/ManageSystem/Department/main.html">当前任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/taskArchive.html">归档任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/contact.html">成员管理</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Department/assignment.html">任务分配</a></li>
+                <li><a href="javascript:;">公告</a></li>
+            </ul>
+        </div>
+        <div>
+            <span>公告</span>
+        </div>
+
+        <el-table
+                :data="notices"
+                style="width: 100%">
+            <el-table-column type="expand">
+                <template slot-scope="props">
+                    <el-form label-position="left" inline class="demo-table-expand">
+                        <el-form-item label="公告编号">
+                            <span>{{ props.row.id}}</span>
+                        </el-form-item>
+                        <el-form-item label="公告标题">
+                            <span>{{ props.row.title}}</span>
+                        </el-form-item>
+                        <el-form-item label="公告时间">
+                            <span>{{ props.row.time}}</span>
+                        </el-form-item>
+                        <el-form-item label="公告内容">
+                            <span>{{ props.row.detail}}</span>
+                        </el-form-item>
+                    </el-form>
+                </template>
+            </el-table-column>
+            <el-table-column
+                    label="公告编号"
+                    prop="id">
+            </el-table-column>
+            <el-table-column
+                    label="公告标题"
+                    prop="title">
+            </el-table-column>
+            <el-table-column
+                    label="公告内容"
+                    prop="briefing">
+            </el-table-column>
+            <el-table-column
+                    label="公告时间"
+                    prop="time">
+            </el-table-column>
+        </el-table>
+        <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page="currentPage"
+                :page-sizes="[2, 10, 15, 20]"
+                :page-size="2"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="totalCount">
+        </el-pagination>
+    </div>
+</body>
+<script src="../js/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<script>
+
+    new Vue({
+        el: "#app",
+        mounted() {
+            this.checkSession();
+        },
+        methods: {
+            checkSession() {
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/checkSession"
+                }).then(resp => {
+                    if (resp.data === null) {
+                        alert("请进行登录再操作")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else if(resp.data.position ==='成员'){
+                        alert("权限不足，请从官方入口尝试再次登入")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else{
+                        this.user = resp.data;
+                        this.imageUrl = "../profilephoto/"+this.user.userId+".jpg";
+                        this.selectPersonTaskCount();
+                    }
+                })
+            },
+            selectPersonTaskCount(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/selectNoticeCount",
+                }).then(resp=>{
+                    this.totalCount = resp.data;
+                    this.selectAll();
+                })
+            },
+            selectAll(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/selectAllNotice?currentPage="+this.currentPage+"&pageSize="+this.pageSize,
+                }).then(resp=>{
+                    for(let i = 0;i< resp.data.length;i++) {
+                        if(resp.data[i].detail !=null &&resp.data[i].detail.length>20)
+                            resp.data[i].briefing = resp.data[i].detail.substring(0,20)+"..."
+                        else
+                            resp.data[i].briefing = resp.data[i].detail
+                        resp.data[i].time = resp.data[i].time.replaceAll('T',' ')
+                    }
+                    this.notices = resp.data;
+                })
+            },
+            handleSizeChange(val) {
+                // console.log(`每页 ${val} 条`);
+                this.pageSize = val;
+                this.selectAll()
+            },
+            handleCurrentChange(val) {
+                // console.log(`当前页: ${val}`);
+                this.currentPage = val;
+                this.selectAll()
+            },
+            exit(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/delectSession",
+                }).then(resp=>{
+                    this.checkSession()
+                })
+            },
+        },
+        data() {
+            return{
+                notices:[{
+                    id:'',
+                    title:'',
+                    detail:'',
+                    time:'',
+                    briefing: ''
+                }],
+                totalCount:100,
+                //每页显示条数
+                pageSize:2,
+                currentPage: 1,
+                user:{
+                    userId:'',
+                    departmentId:'',
+                    name:'',
+                    password:'',
+                    position:'',
+                    email:'',
+                },
+                imageUrl: '',
+            }
+        }
+
+    })
+</script>
+</html>

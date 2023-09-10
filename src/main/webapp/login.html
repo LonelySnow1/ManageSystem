@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>login</title>
+</head>
+<body>
+<div id="app">
+    <div>
+        <div class="little">
+            <p>About Company</p>
+            <a href="http://localhost:8080/ManageSystem/sign-up.html"><button>Sign Up</button></a>
+        </div>
+        <div class="big Login">
+            <h1>Login</h1>
+            <form class="lf" :model="login">
+                <div class="tip"></div>
+                <input type="text" placeholder="邮箱" v-model="login.email"><br>
+                <input type="password" placeholder="密码" v-model="login.password"><br>
+                <input type="text" placeholder="验证码" v-model="vcode"> <img v-bind:src= "imgsrc" @click="changeImg" alt="已经帮你过滤掉验证码了"><br>
+                <input type="checkbox" v-model="isChecked">Remember the password<br>
+                <el-button @click="signIn">Login</el-button><br>
+            </form>
+            <a href="http://localhost:8080/ManageSystem/reset_Password.html">forget password</a>
+        </div>
+    </div>
+</div>
+
+
+<script src="js/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="js/axios-0.18.0.js"></script>
+<link rel="stylesheet" url="element-ui/lib/theme-chalk/index.css">
+
+<script>
+    new Vue({
+        el: "#app",
+
+        mounted() {
+            this.checkSession();
+        },
+
+
+        methods: {
+            checkSession(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/checkSession"
+                }).then(resp=>{
+                    if (resp.data !== null) {
+                        let element = document.querySelector(".Login");
+                        console.log(resp.data.position)
+                        let time = 4;
+                        const clean = setInterval(function () {
+                            time--;
+                            element.innerHTML = "<h1>请勿重复登陆</h1><br><h3>" + time + "秒后回到主页面</h3>"
+                            if (time === 0) {
+                                if(resp.data.position ==="成员")
+                                    window.location.href = "http://localhost:8080/ManageSystem/user_home/main.html";
+                                if(resp.data.position === "部门总管")
+                                    window.location.href = "http://localhost:8080/ManageSystem/Department/main.html";
+                                if(resp.data.position === "总经理")
+                                    window.location.href = "http://localhost:8080/ManageSystem/Boss/main.html";
+                                clearInterval(clean);
+                            }
+                        }, 1000);
+                    }
+                    else
+                        this.checkCookies();
+                })
+            },
+            checkCookies(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/getCookies"
+                }).then(resp=>{
+                    if(resp.data !== ""){
+                        split = resp.data.split("->");
+                        this.login.email = split[0];
+                        this.login.password = split[1];
+                        this.isChecked = true;
+                    }
+                })
+            },
+            signIn() {
+                let element = document.querySelector(".tip");
+                let lf = document.querySelector(".lf")
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/user/loginCheck?vcode="+this.vcode+"&Cookies="+this.isChecked,
+                    data: this.login
+                }).then(resp => {
+                    if (resp.data ==="v-false") {
+                        element.innerText = "验证码错误，请重试";
+                        this.resetForm();
+                        this.changeImg();
+                    } else {
+                        if (resp.data) {
+                            this.position = resp.data.position
+                            if (this.position === "成员")
+                                window.location.href = "http://localhost:8080/ManageSystem/user_home/main.html";
+                            if (this.position === "部门总管")
+                                window.location.href = "http://localhost:8080/ManageSystem/Department/main.html";
+                            if (this.position === "总经理")
+                                window.location.href = "http://localhost:8080/ManageSystem/Boss/main.html";
+                        }
+                        else {
+                            element.innerText = "账号或密码错误";
+                            this.resetForm();
+                            this.changeImg();
+                        }
+                    }
+
+                })
+            },
+            changeImg() {
+                this.imgsrc = "/ManageSystem/kaptch.jpg?t=" + new Date().getTime();
+            },
+            resetForm(){
+                for(let key in this.login){
+                    this.login[key] = '';
+                }
+                this.vcode = '';
+            },
+        },
+            data() {
+                return {
+                    login: {
+                        userId: '',
+                        departmentId: '',
+                        name: '',
+                        password: '',
+                        position: '',
+                        email: ''
+                    },
+                    vcode: '',//验证码
+                    imgsrc:"/ManageSystem/kaptch.jpg?t="+new Date().getTime(),
+                    isChecked:false,
+                    position:'',
+                }
+            }
+
+    })
+
+
+</script>
+
+</body>
+</html>

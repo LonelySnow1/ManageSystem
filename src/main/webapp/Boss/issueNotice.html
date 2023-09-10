@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notice</title>
+</head>
+<style>
+    .demo-table-expand {
+        font-size: 0;
+    }
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+</style>
+
+<body>
+    <div id="app">
+        <div class="top">
+            <span>任务分配系统——发布公告</span>
+            <a href="http://localhost:8080/ManageSystem/Boss/main.html">首页</a>
+            <a href="http://localhost:8080/ManageSystem/Boss/center.html">个人中心</a>
+            <img :src="imageUrl" onerror="this.src='../profilephoto/default.jpg'" alt="头像" style="height:30px;width:30px;border-radius: 50%">
+            <span>{{user.name}}</span>
+            <el-button @click="exit">退出登录</el-button>
+        </div>
+        <div class="sidebar">
+            <ul>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/main.html">当前任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/taskArchive.html">归档任务</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/contact.html">成员管理</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/assignment.html">任务分配</a></li>
+                <li><a href="javascript:;">发布公告</a></li>
+                <li><a href="http://localhost:8080/ManageSystem/Boss/notice.html">公告</a></li>
+            </ul>
+        </div>
+        <div>
+            <h2>发布公告</h2>
+            <input type="text" v-model="notice.title" placeholder="请输入公告标题"><br>
+            <textarea placeholder="请输入公告内容" v-model="notice.detail"></textarea><br>
+            <el-button @click="submit">发布公告</el-button>
+        </div>
+    </div>
+</body>
+<script src="../js/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../js/axios-0.18.0.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<script>
+
+    new Vue({
+        el: "#app",
+        mounted() {
+            this.checkSession();
+        },
+        methods: {
+            checkSession() {
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/checkSession"
+                }).then(resp => {
+                    if (resp.data === null) {
+                        alert("请进行登录再操作")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else if(resp.data.position ==='成员'){
+                        alert("权限不足，请从官方入口尝试再次登入")
+                        window.location.href = "http://localhost:8080/ManageSystem/login.html";
+                    }
+                    else{
+                        this.user = resp.data;
+                        this.imageUrl = "../profilephoto/"+this.user.userId+".jpg";
+                    }
+                })
+            },
+            submit(){
+                var date = new Date();
+                this.notice.time = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/ManageSystem/department/addNotice",
+                    data:this.notice
+                }).then(resp => {
+                    alert("提交成功");
+                    this.notice.title='';
+                    this.notice.detail='';
+                    this.notice.time='';
+                })
+            },
+            exit(){
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/ManageSystem/user/delectSession",
+                }).then(resp=>{
+                    this.checkSession()
+                })
+            },
+        },
+        data() {
+            return{
+                notice:{
+                    title:'',
+                    detail:'',
+                    time:'',
+                },
+                user:{
+                    userId:'',
+                    departmentId:'',
+                    name:'',
+                    password:'',
+                    position:'',
+                    email:'',
+                },
+                imageUrl: '',
+            }
+        }
+
+    })
+</script>
+</html>
